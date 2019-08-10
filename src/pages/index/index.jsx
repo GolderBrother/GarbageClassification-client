@@ -1,0 +1,162 @@
+import Taro, { Component } from "@tarojs/taro";
+import { View, Text, Image } from "@tarojs/components";
+import { findAllType } from "@/client";
+import { AtPage } from "@/components";
+import { AtSearchBar } from "taro-ui";
+import TaroSdk from "@/utils/wxSdk";
+import "./index.scss";
+
+export default class Index extends Component {
+  // 页面的配置只能设置 全局配置 中部分 window 配置项的内容，页面中配置项会覆盖 全局配置 的 window 中相同的配置项。
+  // config = {
+  //   navigationBarBackgroundColor: '#ffffff',
+  //   navigationBarTextStyle: 'black',
+  //   navigationBarTitleText: '首页',
+  //   backgroundColor: '#eeeeee',
+  //   backgroundTextStyle: 'light'
+  // }
+  static options = {
+    addGlobalClass: true
+  };
+
+  config = {
+    navigationBarTitleText: "垃圾分类指南"
+  };
+
+  state = {
+    types: [],
+    value: ""
+  };
+
+  componentWillMount() {
+    this.fetchTypes();
+  }
+
+  componentDidMount() {
+    // this.fetchTypes();
+  }
+
+  componentWillUnmount() {}
+
+  componentDidShow() {}
+
+  componentDidHide() {}
+
+  async fetchTypes() {
+    try {
+      const res = await findAllType();
+      if(!res) return;
+      this.setState({
+        types: res.data
+      });
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  onChange(value) {
+    this.setState({
+      value: value
+    });
+  }
+  onActionClick() {
+    if (!this.state.value) {
+      return;
+    }
+    Taro.navigateTo({
+      url: `../search/index?val=${this.state.value}`
+    });
+  }
+
+  onSearch(e) {
+    Taro.navigateTo({
+      url: `../search/index?val=${e.currentTarget.dataset.title}`
+    });
+  }
+
+  onNav(id) {
+    Taro.navigateTo({
+      url: `../detail/index?id=${id}`
+    });
+  }
+
+  onPhotograph() {
+    TaroSdk.chooseImage().then(res => {
+      console.log(res);
+      if (res) {
+        Taro.navigateTo({
+          url: `../result/index?path=${res}`
+        });
+      } else {
+        Taro.showToast({
+          title: "请上传图片",
+          icon: "error",
+          duration: 1000
+        });
+      }
+    });
+  }
+  render() {
+    return (
+      <AtPage>
+        <View className='search'>
+          <AtSearchBar
+            showActionButton
+            placeholder='请输入正确名称（包括材质）'
+            value={this.state.value}
+            onChange={this.onChange.bind(this)}
+            onActionClick={this.onActionClick.bind(this)}
+          />
+          <View className='icon flex'>
+            <View
+              onClick={this.onPhotograph}
+              className='icon_item flex flex__direction--column flex__justify--center flex__align--center'
+            >
+              <View className='photo_img' />
+              拍照识别
+            </View>
+          </View>
+        </View>
+        <View className='hot-search'>
+          <View className='hot-search_title'>热门搜索</View>
+          <View className='hot-search_item flex flex--warp'>
+            <View onClick={e => this.onSearch(e)} data-title='面膜' className='item'>
+              面膜
+            </View>
+          </View>
+        </View>
+        <View className='content'>
+          <View className='content_title'>日常垃圾分类指南</View>
+          <View className='content_grid flex flex--wrap'>
+            {this.state.types.map(item => (
+              <View
+                onClick={this.onNav.bind(this, item.id)}
+                key={item.id}
+                className='item flex flex__justify--between'
+              >
+                <View className='flex'>
+                  <View className='item_image'>
+                    <Image src={item.icon} />
+                  </View>
+                  <View className='item_text flex flex__direction--column'>
+                    <Text>{item.title}</Text>
+                    <Text className='text_english'>{item.english}</Text>
+                  </View>
+                </View>
+                <View className='icon'>
+                  <Image src='https://ws4.sinaimg.cn/large/006a7eb0ly1g4qgt9xu5qj305k05kmwy.jpg' />
+                </View>
+              </View>
+            ))}
+          </View>
+          <View className='remarks'>
+            备注：湿垃圾（又名厨余垃圾、易腐垃圾、餐厨垃圾），干垃圾（又名其他垃圾），生活垃圾分类同时包括：装修垃圾和大件垃圾
+          </View>
+          <View className='footer_text'>
+            参与垃圾分类，保护地球家园，共创美好未来
+          </View>
+        </View>
+      </AtPage>
+    );
+  }
+}
